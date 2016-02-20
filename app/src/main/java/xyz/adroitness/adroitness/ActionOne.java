@@ -147,7 +147,7 @@ public class ActionOne extends YouTubeBaseActivity
 
                         moveRightHand = Utils.computeAccuracy(beacon1);
                         distance = Utils.computeAccuracy(beacon1);
-                        if(onClicked) {
+                        if (onClicked) {
                             if (distance < 1.1 && actionDone == false) {
                                 actionDone = true;
                                 count++;
@@ -164,13 +164,12 @@ public class ActionOne extends YouTubeBaseActivity
                             }
                         }
 
-
                         Log.v("actionOne", "move right hand : " + moveRightHand);
                         difference = initRighthand - moveRightHand;
                         Log.v("actionOne", "different : " + difference);
                         if (moveRightHand > 0.2 && moveRightHand < 0.3)
 //                            Toast.makeText(getApplication(), "Done it", Toast.LENGTH_LONG).show();
-                        Log.i("COMPUTE", "Distance: " + Double.toString(Utils.computeAccuracy(beacon1)));
+                            Log.i("COMPUTE", "Distance: " + Double.toString(Utils.computeAccuracy(beacon1)));
                         if (firstConnection && beacon1 != null) {
                             firstConnection = false;
                             setConnection();
@@ -215,6 +214,19 @@ public class ActionOne extends YouTubeBaseActivity
                 ActivityOptionsCompat options = ActivityOptionsCompat.
                         makeSceneTransitionAnimation(ActionOne.this, (YouTubePlayerView) youTubePlayerView, "profile");
                 startActivity(intent, options.toBundle());
+            }
+        });
+
+        Button button = (Button) findViewById(R.id.haha);
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                count++;
+                current.setText("Action Count: " + count);
+                if (count > 3) {
+                    current.setText("DONE");
+                    next.setVisibility(View.VISIBLE);
+                }
             }
         });
     }
@@ -312,8 +324,7 @@ public class ActionOne extends YouTubeBaseActivity
                     if (motionState == MotionState.MOVING) {
                         Log.i("motion", "In Motion");
                         count++;
-                    }
-                    else
+                    } else
                         Log.i("motion", "Not in motion");
                 } else {
                     Log.i("motion", "Disabled");

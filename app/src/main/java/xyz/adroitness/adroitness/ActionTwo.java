@@ -5,15 +5,16 @@ import android.os.Bundle;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
-import android.transition.Explode;
 import android.transition.Slide;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -73,7 +74,7 @@ public class ActionTwo extends YouTubeBaseActivity
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
         getWindow().requestFeature(Window.FEATURE_CONTENT_TRANSITIONS);
 // set an enter transition
-        getWindow().setEnterTransition(new Slide(Gravity.RIGHT));
+//        getWindow().setEnterTransition(new Slide(Gravity.RIGHT));
 // set an exit transition
         getWindow().setExitTransition(new Slide());
         setContentView(R.layout.activity_two);
@@ -190,6 +191,13 @@ public class ActionTwo extends YouTubeBaseActivity
 
             }
 
+        });
+        ImageView next = (ImageView) findViewById(R.id.next);
+        next.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                startActivity(new Intent(ActionTwo.this, ActionDone.class));
+            }
         });
     }
 

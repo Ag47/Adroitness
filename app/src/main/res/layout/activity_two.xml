@@ -3,20 +3,22 @@
     android:layout_height="match_parent"
     android:background="@color/colorPrimary">
 
-    <!--<Toolbar-->
-    <!--android:id="@+id/toolbar"-->
-    <!--app:popupTheme="@style/AppTheme.PopupOverlay"-->
-    <!--android:layout_width="match_parent"-->
-    <!--android:layout_height="?attr/actionBarSize"-->
-    <!--android:background="?attr/colorPrimary" />-->
+    <ImageView
+        android:id="@+id/title"
+        android:layout_width="300dp"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="24dp"
+        android:layout_marginTop="24dp"
+        android:src="@drawable/title"
+        android:tint="@color/primary_text" />
 
     <com.google.android.youtube.player.YouTubePlayerView
         android:id="@+id/youtube_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentTop="true"
-        android:layout_marginTop="91dp"
+        android:layout_below="@id/title"
+        android:layout_margin="5dp"
         android:background="@drawable/round" />
 
     <LinearLayout
@@ -38,10 +40,10 @@
                 android:layout_alignParentLeft="true"
                 android:layout_centerVertical="true"
                 android:src="@drawable/fast_rewind"
-                android:tint="@color/colorAccent"
-                 />
+                android:tint="@color/colorAccent" />
 
             <xyz.adroitness.adroitness.CustomFontTextView
+                android:id="@+id/current"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerInParent="true"
@@ -51,6 +53,7 @@
                 android:textStyle="bold" />
 
             <ImageView
+                android:id="@+id/next"
                 android:layout_width="60dp"
                 android:layout_height="60dp"
                 android:layout_alignParentRight="true"
@@ -60,6 +63,14 @@
         </RelativeLayout>
 
     </LinearLayout>
+
+    <Button
+        android:id="@+id/haha"
+        android:layout_width="200dp"
+        android:layout_height="80dp"
+        android:layout_alignParentBottom="true"
+        android:visibility="invisible"
+        android:layout_alignParentLeft="true" />
 
     <ListView
         android:id="@+id/device_list"

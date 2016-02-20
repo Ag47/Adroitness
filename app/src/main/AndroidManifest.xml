@@ -35,7 +35,11 @@
             android:name=".ActionTwo"
             android:label="ActionTwo"
             android:screenOrientation="portrait">
-
+        </activity>
+        <activity
+            android:name=".ActionDone"
+            android:label="ActionDone"
+            android:screenOrientation="portrait">
         </activity>
     </application>
 
