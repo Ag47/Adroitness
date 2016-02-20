@@ -2,23 +2,55 @@ package xyz.adroitness.adroitness;
 
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.view.View;
 import android.support.design.widget.NavigationView;
+import android.support.design.widget.Snackbar;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.ListView;
+
+import com.estimote.sdk.Beacon;
+import com.estimote.sdk.BeaconManager;
+import com.estimote.sdk.Region;
+import com.estimote.sdk.Utils;
+import com.estimote.sdk.cloud.model.BeaconInfo;
+import com.estimote.sdk.connection.BeaconConnection;
+import com.estimote.sdk.connection.MotionState;
+import com.estimote.sdk.connection.Property;
+import com.estimote.sdk.exception.EstimoteDeviceException;
+
+import java.util.Collections;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
+    private BeaconManager beaconManager;
+    private String scanId;
+    private BeaconListAdapter adapter;
+
+    // TODO connection beacon 2&3
+    private BeaconConnection connection1;
+    private BeaconConnection connection2;
+    private BeaconConnection connection3;
+    private Beacon beacon1 = null;
+    private Beacon beacon2 = null;
+    private Beacon beacon3 = null;
+
+    boolean firstConnection;
+
+    private static final Region ALL_ESTIMOTE_BEACONS_REGION = new Region("rid", null, null, null);
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        firstConnection = true;
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -40,6 +72,170 @@ public class MainActivity extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+
+        beaconManager = new BeaconManager(this);
+
+        // Configure device list.
+        adapter = new BeaconListAdapter(this);
+        ListView list = (ListView) findViewById(R.id.device_list);
+        list.setAdapter(adapter);
+
+        // Configure BeaconManager.
+        beaconManager = new BeaconManager(this);
+        beaconManager.setRangingListener(new BeaconManager.RangingListener() {
+            @Override
+            public void onBeaconsDiscovered(Region region, final List<Beacon> beacons) {
+                // Note that results are not delivered on UI thread.
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        // Note that beacons reported here are already sorted by estimated
+                        // distance between device and beacon.
+                        adapter.replaceWith(beacons);
+                        beacon1 = beacons.get(0);
+                        Log.i("COMPUTE", "Distance: " + Double.toString(Utils.computeAccuracy(beacon1)));
+                        if (firstConnection && beacon1 != null) {
+                            firstConnection = false;
+                            setConnection();
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    private void setConnection() {
+        connection1 = new BeaconConnection(this, beacon1, new BeaconConnection.ConnectionCallback() {
+            @Override
+            public void onAuthorized(BeaconInfo beaconInfo) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+//                        statusView.setText("Authorized. Connecting...");
+                    }
+                });
+            }
+
+            @Override
+            public void onConnected(BeaconInfo beaconInfo) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+//                        statusView.setText("Connected");
+                    }
+                });
+                // First step after connection is to enable motion detection on beacon. Otherwise no
+                // motion notifications will be sent.
+                connection1.edit().set(connection1.motionDetectionEnabled(), true).commit(new BeaconConnection.WriteCallback() {
+                    @Override
+                    public void onSuccess() {
+                        // After on beacon connect all values are read so we can read them immediately and update UI.
+                        setMotionText(connection1.motionDetectionEnabled().get() ? connection1.motionState().get() : null);
+//                        setTemperature(connection.temperature().get());
+                        // Motion sensor sends status updates on physical state change.
+                        enableMotionListner();
+                        // Temperature must be read periodically.
+//                        refreshTemperature();
+                    }
+
+                    @Override
+                    public void onError(EstimoteDeviceException exception) {
+//                        showToast("Failed to enable motion detection");
+                    }
+                });
+            }
+
+            @Override
+            public void onAuthenticationError(final EstimoteDeviceException exception) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+//                        statusView.setText("Status: Cannot connect to beacon. \n" +
+//                                "Error: " + exception.getMessage() + "\n" +
+//                                "Did you change App ID and App Token in DemosApplication?");
+                    }
+                });
+            }
+
+            @Override
+            public void onDisconnected() {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+//                        statusView.setText("Status: Disconnected from beacon");
+                    }
+                });
+            }
+        });
+        if (!connection1.isConnected()) {
+            connection1.authenticate();
+        } else {
+            enableMotionListner();
+
+        }
+    }
+
+    private void enableMotionListner() {
+        connection1.setMotionListener(new Property.Callback<MotionState>() {
+            @Override
+            public void onValueReceived(final MotionState value) {
+                setMotionText(value);
+            }
+
+            @Override
+            public void onFailure() {
+                Log.i("onFailure", "Unable to register motion listener");
+            }
+        });
+    }
+
+    private void setMotionText(final MotionState motionState) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (motionState != null) {
+                    if (motionState == MotionState.MOVING)
+                        Log.i("motion", "In Motion");
+                    else
+                        Log.i("motion", "Not in motion");
+                } else {
+                    Log.i("motion", "Disabled");
+                }
+            }
+        });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        // Should be invoked in #onStart.
+        beaconManager.connect(new BeaconManager.ServiceReadyCallback() {
+            @Override
+            public void onServiceReady() {
+                scanId = beaconManager.startNearableDiscovery();
+                connectToService();
+            }
+        });
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        // Should be invoked in #onStop.
+        beaconManager.stopEddystoneScanning(scanId);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // When no longer needed. Should be invoked in #onDestroy.
+        beaconManager.disconnect();
     }
 
     @Override
@@ -97,5 +293,15 @@ public class MainActivity extends AppCompatActivity
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
+    }
+
+    private void connectToService() {
+        adapter.replaceWith(Collections.<Beacon>emptyList());
+        beaconManager.connect(new BeaconManager.ServiceReadyCallback() {
+            @Override
+            public void onServiceReady() {
+                beaconManager.startRanging(ALL_ESTIMOTE_BEACONS_REGION);
+            }
+        });
     }
 }
