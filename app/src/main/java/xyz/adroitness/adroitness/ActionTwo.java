@@ -1,28 +1,23 @@
 package xyz.adroitness.adroitness;
 
-import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
-import android.support.design.widget.Snackbar;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBarDrawerToggle;
-import android.support.v7.widget.Toolbar;
+import android.transition.Explode;
+import android.transition.Slide;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.ListView;
+import android.widget.Toast;
 
-import com.android.volley.Request;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonObjectRequest;
-import com.att.m2x.android.listeners.ResponseListener;
 import com.att.m2x.android.main.M2XAPI;
-import com.att.m2x.android.model.Device;
-import com.att.m2x.android.network.ApiV2Response;
 import com.estimote.sdk.Beacon;
 import com.estimote.sdk.BeaconManager;
 import com.estimote.sdk.Region;
@@ -32,24 +27,23 @@ import com.estimote.sdk.connection.BeaconConnection;
 import com.estimote.sdk.connection.MotionState;
 import com.estimote.sdk.connection.Property;
 import com.estimote.sdk.exception.EstimoteDeviceException;
+import com.google.android.youtube.player.YouTubeBaseActivity;
+import com.google.android.youtube.player.YouTubeInitializationResult;
+import com.google.android.youtube.player.YouTubePlayer;
+import com.google.android.youtube.player.YouTubePlayerView;
 
-import org.json.JSONObject;
-
-import java.text.SimpleDateFormat;
 import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Timer;
 
-public class MainActivity extends Activity
-        implements NavigationView.OnNavigationItemSelectedListener, ResponseListener {
+public class ActionTwo extends YouTubeBaseActivity
+        implements NavigationView.OnNavigationItemSelectedListener, YouTubePlayer.OnInitializedListener {
 
     private BeaconManager beaconManager;
     private String scanId;
     private BeaconListAdapter adapter;
-
-    JSONObject result;
+    private Thread thread;
+    Timer timer;
     // TODO connection beacon 2&3
     private BeaconConnection connection1;
     private BeaconConnection connection2;
@@ -57,45 +51,55 @@ public class MainActivity extends Activity
     private Beacon beacon1 = null;
     private Beacon beacon2 = null;
     private Beacon beacon3 = null;
-
+    double initRighthand, moveRightHand, difference, distance;
+    boolean actionDone = false;
+    int count = 0;
+    boolean firstStart = true;
     boolean firstConnection;
+
+    Button btnIntentActOne;
+    private static final int RECOVERY_DIALOG_REQUEST = 1;
+
+    // YouTube player view
+    private YouTubePlayerView youTubeView;
 
     private static final Region ALL_ESTIMOTE_BEACONS_REGION = new Region("rid", null, null, null);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // Create Device in AT&T M2X
-//        JSONObject params = new JSONObject();
-//        try {
-//            params.put("name","Nexus");
-//            params.put("visibility","public");
-//        } catch (JSONException e) {
-//            e.printStackTrace();
-//        }
-//        Device.createDevice(this, params, this);
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        getWindow().requestFeature(Window.FEATURE_CONTENT_TRANSITIONS);
+// set an enter transition
+        getWindow().setEnterTransition(new Slide(Gravity.RIGHT));
+// set an exit transition
+        getWindow().setExitTransition(new Slide());
+        setContentView(R.layout.activity_two);
         firstConnection = true;
-        setContentView(R.layout.activity_main);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-//        setSupportActionBar(toolbar);
+        // inside your activity (if you did not enable transitions in your theme)
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
+//        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+//        setActionBar(toolbar);
 
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        drawer.setDrawerListener(toggle);
-        toggle.syncState();
+//        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+//        fab.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+//                        .setAction("Action", null).show();
+//            }
+//        });
 
-        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
-        navigationView.setNavigationItemSelectedListener(this);
+//        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+//        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
+//                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+//        drawer.setDrawerListener(toggle);
+//        toggle.syncState();
+
+//        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+//        navigationView.setNavigationItemSelectedListener(this);
 
         beaconManager = new BeaconManager(this);
 
@@ -116,8 +120,44 @@ public class MainActivity extends Activity
                         // Note that beacons reported here are already sorted by estimated
                         // distance between device and beacon.
                         adapter.replaceWith(beacons);
-//                        if (beacon1 != null)
                         beacon1 = beacons.get(0);
+                        if (firstStart) {
+                            initRighthand = Utils.computeAccuracy(beacon1);
+                            Log.v("actionOne", "first right hand : " + initRighthand + " " + beacon1.getMacAddress().toString());
+                            firstStart = false;
+                        }
+                        thread = new Thread() {
+                            @Override
+                            public void run() {
+                                try {
+                                    synchronized (this) {
+                                        wait(3000);
+                                    }
+                                } catch (InterruptedException ex) {
+                                }
+
+                                // TODO
+                            }
+                        };
+                        thread.start();
+                        moveRightHand = Utils.computeAccuracy(beacon1);
+                        distance = Utils.computeAccuracy(beacon1);
+                        if (distance < 1.1 && actionDone == false) {
+                            actionDone = true;
+                            count++;
+                            Log.i("Actioncount", Integer.toString(count));
+
+                        }
+                        if (distance > 0.9 && actionDone == true) {
+                            actionDone = false;
+                        }
+
+
+                        Log.v("actionOne", "move right hand : " + moveRightHand);
+                        difference = initRighthand - moveRightHand;
+                        Log.v("actionOne", "different : " + difference);
+                        if (moveRightHand > 0.2 && moveRightHand < 0.3)
+                            Toast.makeText(getApplication(), "Done it", Toast.LENGTH_LONG).show();
                         Log.i("COMPUTE", "Distance: " + Double.toString(Utils.computeAccuracy(beacon1)));
                         if (firstConnection && beacon1 != null) {
                             firstConnection = false;
@@ -131,11 +171,26 @@ public class MainActivity extends Activity
         M2XAPI.initialize(getApplicationContext(), "8edf4e632982a3e56ee099c2847c9139");
 
 
-        JSONObject o = null;
-        JsonObjectRequest jsonObjReq = null;
+//        btnIntentActOne = (Button) findViewById(R.id.ActionOne);
+//        btnIntentActOne.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                startActivity(new Intent(MainActivity.this, ActivitOne.class));
+//
+//            }
+//        });
+        youTubeView = (YouTubePlayerView) findViewById(R.id.youtube_view);
 
-        MySingleton.getInstance(this).addToRequestQueue(jsonObjReq);
+        // Initializing video player with developer key
+        youTubeView.initialize(Config.DEVELOPER_KEY, this);
+        runOnUiThread(new Runnable() {
 
+            public void run() {
+
+
+            }
+
+        });
     }
 
     private void setConnection() {
@@ -340,19 +395,39 @@ public class MainActivity extends Activity
     }
 
     @Override
-    public void onRequestCompleted(ApiV2Response result, int i) {
-        Log.d("APIV2Request", "Completed");
-        Log.d("APIV2 - RESULT", result.get_raw());
+    public void onInitializationFailure(YouTubePlayer.Provider provider,
+                                        YouTubeInitializationResult errorReason) {
+        if (errorReason.isUserRecoverableError()) {
+            errorReason.getErrorDialog(this, RECOVERY_DIALOG_REQUEST).show();
+        } else {
+            String errorMessage = errorReason.toString();
+            Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show();
+        }
     }
 
     @Override
-    public void onRequestError(ApiV2Response error, int i) {
-        Log.d("APIV2Request", "Error");
-        Log.d("APIV2 - ERROR", error.get_raw());
+    public void onInitializationSuccess(YouTubePlayer.Provider provider,
+                                        YouTubePlayer player, boolean wasRestored) {
+        if (!wasRestored) {
+
+            // loadVideo() will auto play video
+            // Use cueVideo() method, if you don't want to play it automatically
+            player.loadVideo(Config.YOUTUBE_VIDEO_CODE);
+
+            // Hiding player controls
+            player.setPlayerStyle(YouTubePlayer.PlayerStyle.CHROMELESS);
+        }
     }
 
-    public interface VolleyCallback {
-        void onSuccess(JSONObject result);
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == RECOVERY_DIALOG_REQUEST) {
+            // Retry initialization if user performed a recovery action
+            getYouTubePlayerProvider().initialize(Config.DEVELOPER_KEY, this);
+        }
     }
 
+    private YouTubePlayer.Provider getYouTubePlayerProvider() {
+        return (YouTubePlayerView) findViewById(R.id.youtube_view);
+    }
 }

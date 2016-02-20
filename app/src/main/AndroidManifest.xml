@@ -3,6 +3,7 @@
     package="xyz.adroitness.adroitness">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
     <application
         android:name=".AnroitnessApplication"
@@ -17,11 +18,24 @@
             android:label="@string/app_name"
             android:screenOrientation="portrait"
             android:theme="@style/AppTheme.NoActionBar">
+
+        </activity>
+
+        <activity
+            android:name=".ActionOne"
+            android:label="ActionOne"
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+        <activity
+            android:name=".ActionTwo"
+            android:label="ActionTwo"
+            android:screenOrientation="portrait">
+
         </activity>
     </application>
 

@@ -6,8 +6,8 @@ android {
 
     defaultConfig {
         applicationId "xyz.adroitness.adroitness"
-        minSdkVersion 19
-        targetSdkVersion 23
+        minSdkVersion 21
+        targetSdkVersion 22
         versionCode 1
         versionName "1.0"
     }
@@ -23,6 +23,10 @@ repositories {
     flatDir {
         dirs 'libs'
     }
+    mavenCentral()
+    maven {
+        url "https://jitpack.io"
+    }
 }
 
 dependencies {
@@ -30,11 +34,12 @@ dependencies {
     testCompile 'junit:junit:4.12'
     compile 'com.android.support:appcompat-v7:23.1.1'
     compile 'com.android.support:design:23.1.1'
-
     // Estimote SDK
     compile 'com.estimote:sdk:0.9.4@aar'
-
     compile 'com.att.m2x.android:m2x-android:5.0.0@aar'
     compile 'com.mcxiaoke.volley:library:1.0.9'
     compile 'com.google.code.gson:gson:2.3.1'
+    compile files('libs/YouTubeAndroidPlayerApi.jar')
+
+    compile 'com.github.PhilJay:MPAndroidChart:v2.2.2'
 }
