@@ -1,6 +1,8 @@
 package xyz.adroitness.adroitness;
 
 import android.content.Intent;
+import android.graphics.Typeface;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityOptionsCompat;
@@ -34,6 +36,8 @@ import com.google.android.youtube.player.YouTubeBaseActivity;
 import com.google.android.youtube.player.YouTubeInitializationResult;
 import com.google.android.youtube.player.YouTubePlayer;
 import com.google.android.youtube.player.YouTubePlayerView;
+
+import org.w3c.dom.Text;
 
 import java.util.Collections;
 import java.util.List;
@@ -82,6 +86,7 @@ public class ActionOne extends YouTubeBaseActivity
         getWindow().setEnterTransition(new Slide(Gravity.RIGHT));
 // set an exit transition
         getWindow().setExitTransition(new Slide(Gravity.LEFT));
+
         setContentView(R.layout.activity_one);
         firstConnection = true;
         next = (ImageView) findViewById(R.id.next);
@@ -96,6 +101,11 @@ public class ActionOne extends YouTubeBaseActivity
                 count = 0;
             }
         });
+
+        Typeface tf = Typeface.createFromAsset(getAssets(), "fonts/playfair.otf");
+        TextView titleText = (TextView) findViewById(R.id.title);
+        titleText.setTypeface(tf);
+
         // inside your activity (if you did not enable transitions in your theme)
 
 //        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -155,6 +165,8 @@ public class ActionOne extends YouTubeBaseActivity
                                 current.setText("Action Count: " + count);
                                 if (count > 3) {
                                     current.setText("DONE");
+                                    MediaPlayer mp = MediaPlayer.create(getApplicationContext(), R.raw.adoitnesstone);
+                                    mp.start();
                                     next.setVisibility(View.VISIBLE);
                                 }
 
@@ -217,18 +229,6 @@ public class ActionOne extends YouTubeBaseActivity
             }
         });
 
-        Button button = (Button) findViewById(R.id.haha);
-        button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                count++;
-                current.setText("Action Count: " + count);
-                if (count > 3) {
-                    current.setText("DONE");
-                    next.setVisibility(View.VISIBLE);
-                }
-            }
-        });
     }
 
     private void setConnection() {

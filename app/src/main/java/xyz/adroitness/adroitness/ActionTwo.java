@@ -1,8 +1,11 @@
 package xyz.adroitness.adroitness;
 
 import android.content.Intent;
+import android.graphics.Typeface;
+import android.media.Image;
 import android.os.Bundle;
 import android.support.design.widget.NavigationView;
+import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.transition.Slide;
@@ -16,6 +19,7 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.att.m2x.android.main.M2XAPI;
@@ -57,6 +61,10 @@ public class ActionTwo extends YouTubeBaseActivity
     int count = 0;
     boolean firstStart = true;
     boolean firstConnection;
+    TextView current;
+    ImageView next;
+    ImageView previous;
+    boolean onClicked = false;
 
     Button btnIntentActOne;
     private static final int RECOVERY_DIALOG_REQUEST = 1;
@@ -74,11 +82,29 @@ public class ActionTwo extends YouTubeBaseActivity
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
         getWindow().requestFeature(Window.FEATURE_CONTENT_TRANSITIONS);
 // set an enter transition
-//        getWindow().setEnterTransition(new Slide(Gravity.RIGHT));
+        getWindow().setEnterTransition(new Slide(Gravity.RIGHT));
 // set an exit transition
-        getWindow().setExitTransition(new Slide());
+        getWindow().setExitTransition(new Slide(Gravity.LEFT));
         setContentView(R.layout.activity_two);
         firstConnection = true;
+        next = (ImageView) findViewById(R.id.next);
+        previous = (ImageView) findViewById(R.id.previous);
+        current = (TextView) findViewById(R.id.current);
+        next.setVisibility(View.INVISIBLE);
+        current.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                onClicked = true;
+                next.setVisibility(View.INVISIBLE);
+                previous.setVisibility(View.INVISIBLE);
+                current.setText("Action Count: 0");
+                count = 0;
+            }
+        });
+
+        Typeface tf = Typeface.createFromAsset(getAssets(), "fonts/playfair.otf");
+        TextView titleText = (TextView) findViewById(R.id.title);
+        titleText.setTypeface(tf);
         // inside your activity (if you did not enable transitions in your theme)
 
 //        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -127,39 +153,33 @@ public class ActionTwo extends YouTubeBaseActivity
                             Log.v("actionOne", "first right hand : " + initRighthand + " " + beacon1.getMacAddress().toString());
                             firstStart = false;
                         }
-                        thread = new Thread() {
-                            @Override
-                            public void run() {
-                                try {
-                                    synchronized (this) {
-                                        wait(3000);
-                                    }
-                                } catch (InterruptedException ex) {
-                                }
 
-                                // TODO
-                            }
-                        };
-                        thread.start();
                         moveRightHand = Utils.computeAccuracy(beacon1);
                         distance = Utils.computeAccuracy(beacon1);
-                        if (distance < 1.1 && actionDone == false) {
-                            actionDone = true;
-                            count++;
-                            Log.i("Actioncount", Integer.toString(count));
+                        if (onClicked) {
+                            if (distance < 1.1 && actionDone == false) {
+                                actionDone = true;
+                                count++;
+                                Log.i("Actioncount", Integer.toString(count));
+                                current.setText("Action Count: " + count);
+                                if (count > 3) {
+                                    current.setText("DONE");
+                                    next.setVisibility(View.VISIBLE);
+                                    previous.setVisibility(View.VISIBLE);
+                                }
 
+                            }
+                            if (distance > 0.9 && actionDone == true) {
+                                actionDone = false;
+                            }
                         }
-                        if (distance > 0.9 && actionDone == true) {
-                            actionDone = false;
-                        }
-
 
                         Log.v("actionOne", "move right hand : " + moveRightHand);
                         difference = initRighthand - moveRightHand;
                         Log.v("actionOne", "different : " + difference);
                         if (moveRightHand > 0.2 && moveRightHand < 0.3)
-                            Toast.makeText(getApplication(), "Done it", Toast.LENGTH_LONG).show();
-                        Log.i("COMPUTE", "Distance: " + Double.toString(Utils.computeAccuracy(beacon1)));
+//                            Toast.makeText(getApplication(), "Done it", Toast.LENGTH_LONG).show();
+                            Log.i("COMPUTE", "Distance: " + Double.toString(Utils.computeAccuracy(beacon1)));
                         if (firstConnection && beacon1 != null) {
                             firstConnection = false;
                             setConnection();
@@ -192,13 +212,15 @@ public class ActionTwo extends YouTubeBaseActivity
             }
 
         });
-        ImageView next = (ImageView) findViewById(R.id.next);
+
+
         next.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 startActivity(new Intent(ActionTwo.this, ActionDone.class));
             }
         });
+
     }
 
     private void setConnection() {
@@ -291,9 +313,10 @@ public class ActionTwo extends YouTubeBaseActivity
             @Override
             public void run() {
                 if (motionState != null) {
-                    if (motionState == MotionState.MOVING)
+                    if (motionState == MotionState.MOVING) {
                         Log.i("motion", "In Motion");
-                    else
+                        count++;
+                    } else
                         Log.i("motion", "Not in motion");
                 } else {
                     Log.i("motion", "Disabled");
@@ -357,13 +380,12 @@ public class ActionTwo extends YouTubeBaseActivity
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
+        switch (item.getItemId()) {
+            // Respond to the action bar's Up/Home button
+            case android.R.id.home:
+//                supportFinishAfterTransition();
+                return true;
         }
-
         return super.onOptionsItemSelected(item);
     }
 
@@ -416,15 +438,13 @@ public class ActionTwo extends YouTubeBaseActivity
     @Override
     public void onInitializationSuccess(YouTubePlayer.Provider provider,
                                         YouTubePlayer player, boolean wasRestored) {
-        if (!wasRestored) {
+
 
             // loadVideo() will auto play video
             // Use cueVideo() method, if you don't want to play it automatically
-            player.loadVideo(Config.YOUTUBE_VIDEO_CODE);
+            player.cueVideo(Config.YOUTUBE_VIDEO_CODE2);
 
-            // Hiding player controls
-            player.setPlayerStyle(YouTubePlayer.PlayerStyle.CHROMELESS);
-        }
+
     }
 
     @Override

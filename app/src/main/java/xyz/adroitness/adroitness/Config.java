@@ -7,8 +7,8 @@ public class Config {
     public static final String DEVELOPER_KEY = "AIzaSyAeL_0bZ8-JwpREtsuZH5eHxG5zF6BQh4o";
 
     // YouTube video id
-    public static final String YOUTUBE_VIDEO_CODE = "XPIWULv1GBc";
-    public static final String YOUTUBE_VIDEO_CODE2 = "XPIWULv1GBc";
+    public static final String YOUTUBE_VIDEO_CODE = "BSuuigNkEZM";
+    public static final String YOUTUBE_VIDEO_CODE2 = "0Z2a0s-AKOI";
 
     // File upload url (replace the ip with your server address)
     public static final String FILE_UPLOAD_URL = "http://104.155.195.239/oska/php/comehere/upload_image_photo.php";

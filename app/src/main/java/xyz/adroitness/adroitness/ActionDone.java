@@ -5,6 +5,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
@@ -19,6 +20,7 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
@@ -44,7 +46,7 @@ import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.math.RoundingMode;
+import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -70,6 +72,10 @@ public class ActionDone extends FragmentActivity implements OnSeekBarChangeListe
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_done);
         btnTakePhoto = (ImageView) findViewById(R.id.btnTakePhoto);
+
+        Typeface tf = Typeface.createFromAsset(getAssets(), "fonts/playfair.otf");
+        TextView titleText = (TextView) findViewById(R.id.title);
+        titleText.setTypeface(tf);
 
         handleCamera();
 //        mSeekBarX.setProgress(45);
@@ -171,12 +177,60 @@ public class ActionDone extends FragmentActivity implements OnSeekBarChangeListe
         // mChart.invalidate();
 
         final CustomFontTextView selfie = (CustomFontTextView) findViewById(R.id.selfie);
+        final ImageButton share = (ImageButton) findViewById(R.id.share);
         selfie.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 selfie.setVisibility(View.GONE);
+                share.setVisibility(View.VISIBLE);
+                btnTakePhoto.setVisibility(View.VISIBLE);
+                captureImage();
             }
         });
+        share.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                takeScreenshot();
+
+            }
+        });
+    }
+
+    private void takeScreenshot() {
+        Date now = new Date();
+        android.text.format.DateFormat.format("yyyy-MM-dd_hh:mm:ss", now);
+
+        try {
+            // image naming and path  to include sd card  appending name you choose for file
+            String mPath = Environment.getExternalStorageDirectory().toString() + "/" + now + ".jpg";
+
+            // create bitmap screen capture
+            View v1 = getWindow().getDecorView().getRootView();
+            v1.setDrawingCacheEnabled(true);
+            Bitmap bitmap = Bitmap.createBitmap(v1.getDrawingCache());
+            v1.setDrawingCacheEnabled(false);
+
+            File imageFile = new File(mPath);
+
+            FileOutputStream outputStream = new FileOutputStream(imageFile);
+            int quality = 100;
+            bitmap.compress(Bitmap.CompressFormat.JPEG, quality, outputStream);
+            outputStream.flush();
+            outputStream.close();
+
+            openScreenshot(imageFile);
+        } catch (Throwable e) {
+            // Several error may come out with file handling or OOM
+            e.printStackTrace();
+        }
+    }
+
+    private void openScreenshot(File imageFile) {
+        Intent intent = new Intent();
+        intent.setAction(Intent.ACTION_VIEW);
+        Uri uri = Uri.fromFile(imageFile);
+        intent.setDataAndType(uri, "image/*");
+        startActivity(intent);
     }
 
     @Override
@@ -337,7 +391,7 @@ public class ActionDone extends FragmentActivity implements OnSeekBarChangeListe
         for (int i = 0; i < count; i++) {
 
             float mult = (range + 1);
-            float val =  ((int)(Math.random() * 10*10)%100) ;// + (float)
+            float val = ((int) (Math.random() * 10 * 10) % 100);// + (float)
             // ((mult *
             // 0.1) / 10);
             yVals.add(new Entry(val, i));
@@ -391,8 +445,10 @@ public class ActionDone extends FragmentActivity implements OnSeekBarChangeListe
                             Toast.LENGTH_LONG).show();
                     // will close the app if the device does't have camera
                     finish();
-                } else
-                    captureImage();
+                } else {
+
+                }
+//                    captureImage();
             }
         });
     }
@@ -517,7 +573,6 @@ public class ActionDone extends FragmentActivity implements OnSeekBarChangeListe
         btnTakePhoto.setImageBitmap(mBitmap);
 
     }
-
 
 
     // convert Bitmap to base64 String.
